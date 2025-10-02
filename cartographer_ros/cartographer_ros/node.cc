@@ -119,6 +119,11 @@ Node::Node(
         node_handle_.advertise<::geometry_msgs::PoseStamped>(
             kTrackedPoseTopic, kLatestOnlyPublisherQueueSize);
   }
+  if (node_options_.publish_tracked_pose_from_odom) {
+    odom_tracked_pose_publisher_ = 
+        node_handle_.advertise<::geometry_msgs::PoseStamped>(
+            kOdomTrackedPoseTopic, kLatestOnlyPublisherQueueSize);
+  }
   service_servers_.push_back(node_handle_.advertiseService(
       kSubmapQueryServiceName, &Node::HandleSubmapQuery, this));
   service_servers_.push_back(node_handle_.advertiseService(
@@ -321,6 +326,17 @@ void Node::PublishLocalTrajectoryData(const ::ros::TimerEvent& timer_event) {
         pose_msg.header.stamp = stamped_transform.header.stamp;
         pose_msg.pose = ToGeometryMsgPose(tracking_to_map);
         tracked_pose_publisher_.publish(pose_msg);
+      }
+      if (node_options_.publish_tracked_pose_from_odom) {
+        if (trajectory_data.trajectory_options.provide_odom_frame) {
+            ::geometry_msgs::PoseStamped pose_msg;
+            pose_msg.header.frame_id = trajectory_data.trajectory_options.odom_frame;
+            pose_msg.header.stamp = stamped_transform.header.stamp;
+            pose_msg.pose = ToGeometryMsgPose(tracking_to_local);
+            odom_tracked_pose_publisher_.publish(pose_msg);
+        } else {
+          LOG(WARNING) << "Cannot publish tracked pose with respect to odom frame if odom frame is not being published";
+        }
       }
     }
   }

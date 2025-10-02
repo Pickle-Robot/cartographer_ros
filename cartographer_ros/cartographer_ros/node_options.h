@@ -38,6 +38,7 @@ struct NodeOptions {
   bool publish_to_tf = true;
   bool publish_tracked_pose = false;
   bool use_pose_extrapolator = true;
+  bool publish_tracked_pose_from_odom = false;
 };
 
 NodeOptions CreateNodeOptions(
