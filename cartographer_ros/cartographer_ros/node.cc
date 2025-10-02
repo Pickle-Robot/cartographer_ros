@@ -119,6 +119,11 @@ Node::Node(
         node_handle_.advertise<::geometry_msgs::PoseStamped>(
             kTrackedPoseTopic, kLatestOnlyPublisherQueueSize);
   }
+  if (node_options_.publish_tracked_pose_from_odom) {
+    odom_tracked_pose_publisher_ = 
+        node_handle_.advertise<::geometry_msgs::PoseStamped>(
+            kOdomTrackedPoseTopic, kLatestOnlyPublisherQueueSize);
+  }
   service_servers_.push_back(node_handle_.advertiseService(
       kSubmapQueryServiceName, &Node::HandleSubmapQuery, this));
   service_servers_.push_back(node_handle_.advertiseService(
