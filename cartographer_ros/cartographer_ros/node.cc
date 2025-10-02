@@ -327,6 +327,18 @@ void Node::PublishLocalTrajectoryData(const ::ros::TimerEvent& timer_event) {
         pose_msg.pose = ToGeometryMsgPose(tracking_to_map);
         tracked_pose_publisher_.publish(pose_msg);
       }
+      if (node_options_.publish_tracked_pose_from_odom) {
+        if (trajectory_data.trajectory_options.provide_odom_frame) {
+            Rigid3d odom_to_tracking = tracking_to_local;
+            ::geometry_msgs::PoseStamped pose_msg;
+            pose_msg.header.frame_id = trajectory_data.trajectory_options.odom_frame;
+            pose_msg.header.stamp = stamped_transform.header.stamp;
+            pose_msg.pose = ToGeometryMsgPose(odom_to_tracking);
+            odom_tracked_pose_publisher_.publish(pose_msg);
+        } else {
+          LOG(WARNING) << "Cannot publish tracked pose with respect to odom frame if odom frame is not being published";
+        }
+      }
     }
   }
 }
