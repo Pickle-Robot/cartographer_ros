@@ -52,9 +52,9 @@ NodeOptions CreateNodeOptions(
     options.use_pose_extrapolator =
         lua_parameter_dictionary->GetBool("use_pose_extrapolator");
   }
-  if (lua_parameter_dictionary->HasKey("publish_tracked_pose_from_odom")) {
-    options.publish_tracked_pose_from_odom = 
-        lua_parameter_dictionary->GetBool("publish_tracked_pose_from_odom");
+  if (lua_parameter_dictionary->HasKey("publish_odom_msg")) {
+    options.publish_odom_msg = 
+        lua_parameter_dictionary->GetBool("publish_odom_msg");
   }
   return options;
 }
