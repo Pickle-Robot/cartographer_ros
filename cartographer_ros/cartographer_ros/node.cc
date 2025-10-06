@@ -119,10 +119,10 @@ Node::Node(
         node_handle_.advertise<::geometry_msgs::PoseStamped>(
             kTrackedPoseTopic, kLatestOnlyPublisherQueueSize);
   }
-  if (node_options_.publish_tracked_pose_from_odom) {
-    odom_tracked_pose_publisher_ = 
-        node_handle_.advertise<::geometry_msgs::PoseStamped>(
-            kOdomTrackedPoseTopic, kLatestOnlyPublisherQueueSize);
+  if (node_options_.publish_odom_msg) {
+    odometry_msg_publisher_ = 
+        node_handle_.advertise<::nav_msgs::Odometry>(
+            kOdometryMsgTopic, kLatestOnlyPublisherQueueSize);
   }
   service_servers_.push_back(node_handle_.advertiseService(
       kSubmapQueryServiceName, &Node::HandleSubmapQuery, this));
@@ -327,15 +327,27 @@ void Node::PublishLocalTrajectoryData(const ::ros::TimerEvent& timer_event) {
         pose_msg.pose = ToGeometryMsgPose(tracking_to_map);
         tracked_pose_publisher_.publish(pose_msg);
       }
-      if (node_options_.publish_tracked_pose_from_odom) {
+      if (node_options_.publish_odom_msg) {
         if (trajectory_data.trajectory_options.provide_odom_frame) {
-            ::geometry_msgs::PoseStamped pose_msg;
-            pose_msg.header.frame_id = trajectory_data.trajectory_options.odom_frame;
-            pose_msg.header.stamp = stamped_transform.header.stamp;
-            pose_msg.pose = ToGeometryMsgPose(tracking_to_local);
-            odom_tracked_pose_publisher_.publish(pose_msg);
+            ::nav_msgs::Odometry odom_msg;
+            const auto velocity = extrapolator.GetLinearVelocityFromPoses();
+            const auto angular_velocity = extrapolator.GetAngularVelocityFromPoses();
+
+            // Covariance are set to default as we do not have that information.
+
+            odom_msg.header.frame_id = trajectory_data.trajectory_options.odom_frame;
+            odom_msg.child_frame_id = trajectory_data.trajectory_options.tracking_frame;
+            odom_msg.header.stamp = stamped_transform.header.stamp;
+            odom_msg.pose.pose = ToGeometryMsgPose(tracking_to_local);
+            odom_msg.twist.twist.linear.x = velocity.x();
+            odom_msg.twist.twist.linear.y = velocity.y();
+            odom_msg.twist.twist.linear.z = velocity.z();
+            odom_msg.twist.twist.angular.x = angular_velocity.x();
+            odom_msg.twist.twist.angular.y = angular_velocity.y();
+            odom_msg.twist.twist.angular.z = angular_velocity.z();
+            odometry_msg_publisher_.publish(odom_msg);
         } else {
-          LOG(WARNING) << "Cannot publish tracked pose with respect to odom frame if odom frame is not being published";
+          LOG(WARNING) << "Cannot publish odometry message if odom frame is not being published";
         }
       }
     }
