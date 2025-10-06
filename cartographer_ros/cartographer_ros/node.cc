@@ -330,8 +330,8 @@ void Node::PublishLocalTrajectoryData(const ::ros::TimerEvent& timer_event) {
       if (node_options_.publish_odom_msg) {
         if (trajectory_data.trajectory_options.provide_odom_frame) {
             ::nav_msgs::Odometry odom_msg;
-            Eigen::Vector3d velocity = extrapolator.GetLinearVelocityFromPoses();
-            Eigen::Vector3d angular_velocity = extrapolator.GetAngularVelocityFromPoses();
+            const auto velocity = extrapolator.GetLinearVelocityFromPoses();
+            const auto angular_velocity = extrapolator.GetAngularVelocityFromPoses();
 
             // Covariance are set to default as we do not have that information.
 
