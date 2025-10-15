@@ -324,7 +324,7 @@ void Node::PublishLocalTrajectoryData(const ::ros::TimerEvent& timer_event) {
         ::geometry_msgs::PoseStamped pose_msg;
         pose_msg.header.frame_id = node_options_.map_frame;
         pose_msg.header.stamp = stamped_transform.header.stamp;
-        pose_msg.pose = ToGeometryMsgPose(tracking_to_map);
+        pose_msg.pose = ToGeometryMsgPose(tracking_to_map * (*trajectory_data.published_to_tracking));
         tracked_pose_publisher_.publish(pose_msg);
       }
       if (node_options_.publish_odom_msg) {
@@ -336,15 +336,21 @@ void Node::PublishLocalTrajectoryData(const ::ros::TimerEvent& timer_event) {
             // Covariance are set to default as we do not have that information.
 
             odom_msg.header.frame_id = trajectory_data.trajectory_options.odom_frame;
-            odom_msg.child_frame_id = trajectory_data.trajectory_options.tracking_frame;
+            odom_msg.child_frame_id = trajectory_data.trajectory_options.published_frame;
             odom_msg.header.stamp = stamped_transform.header.stamp;
-            odom_msg.pose.pose = ToGeometryMsgPose(tracking_to_local);
-            odom_msg.twist.twist.linear.x = velocity.x();
-            odom_msg.twist.twist.linear.y = velocity.y();
-            odom_msg.twist.twist.linear.z = velocity.z();
-            odom_msg.twist.twist.angular.x = angular_velocity.x();
-            odom_msg.twist.twist.angular.y = angular_velocity.y();
-            odom_msg.twist.twist.angular.z = angular_velocity.z();
+            odom_msg.pose.pose = ToGeometryMsgPose(tracking_to_local * (*trajectory_data.published_to_tracking));
+
+            const auto transformed_twist = TransformTwist(
+              velocity, angular_velocity, tracking_to_local);
+            transformed_linear_velocity = transformed_twist.first;
+            transformed_angular_velocity = transformed_twist.second;
+
+            odom_msg.twist.twist.linear.x = transformed_linear_velocity.x();
+            odom_msg.twist.twist.linear.y = transformed_linear_velocity.y();
+            odom_msg.twist.twist.linear.z = transformed_linear_velocity.z();
+            odom_msg.twist.twist.angular.x = transformed_angular_velocity.x();
+            odom_msg.twist.twist.angular.y = transformed_angular_velocity.y();
+            odom_msg.twist.twist.angular.z = transformed_angular_velocity.z();
             odometry_msg_publisher_.publish(odom_msg);
         } else {
           LOG(WARNING) << "Cannot publish odometry message if odom frame is not being published";

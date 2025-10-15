@@ -89,6 +89,10 @@ std::unique_ptr<nav_msgs::OccupancyGrid> CreateOccupancyGridMsg(
     const double resolution, const std::string& frame_id,
     const ros::Time& time);
 
+std::pair<Eigen::Vector3d, Eigen::Vector3d> TransformTwist(
+    const Eigen::Vector3d& linear_velocity, const Eigen::Vector3d& angular_velocity,
+    const cartographer::transform::Rigid3d& transform);
+
 }  // namespace cartographer_ros
 
 #endif  // CARTOGRAPHER_ROS_CARTOGRAPHER_ROS_MSG_CONVERSION_H

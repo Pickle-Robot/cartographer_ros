@@ -417,4 +417,26 @@ std::unique_ptr<nav_msgs::OccupancyGrid> CreateOccupancyGridMsg(
   return occupancy_grid;
 }
 
+std::pair<Eigen::Vector3d, Eigen::Vector3d> TransformTwist(
+  const Eigen::Vector3d& linear_velocity, const Eigen::Vector3d& angular_velocity,
+  const Rigid3d& transform) {
+    const auto R = transform.rotation().matrix();
+    const auto p = transform.translation();
+
+    Eigen::Matrix3d p_skew;
+    p_skew << 0, -p.z(), p.y(),
+              p.z(), 0, -p.x(),
+              -p.y(), p.x(), 0;
+
+    // Aply adjoint transformation for twist
+    // v_target = R * v_source + p_skew * R * w_source
+    // w_target = R * w_source
+    const Eigen::Vector3d transformed_linear_velocity =
+        R * linear_velocity + p_skew * R * angular_velocity;
+    const Eigen::Vector3d transformed_angular_velocity =
+        R * angular_velocity;
+
+    return std::make_pair(transformed_linear_velocity, transformed_angular_velocity);
+  }
+
 }  // namespace cartographer_ros
